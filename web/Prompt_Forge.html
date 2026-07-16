@@ -336,6 +336,58 @@
   ].join('\n');
 
   /* ---------- output shapes ---------- */
+  // Shared bbox-layout guidance for the Ideogram / Krea shapes. Mirrors the
+  // decomposition rules the standalone JSON bbox builder uses so the forge
+  // produces the same rich, tightly-boxed layouts. withHex toggles the
+  // color_palette field + hex codes (Krea renders hex as literal text).
+  function bboxShapeSpec(withHex){
+    const styleLine=withHex
+      ? '  "style_description": { "aesthetics": "", "lighting": "", "photo": "", "medium": "", "color_palette": ["#RRGGBB", ...] },'
+      : '  "style_description": { "aesthetics": "", "lighting": "", "photo": "", "medium": "" },';
+    const lines=[
+      (withHex
+        ? 'Each prompt is a complete Ideogram-style bbox JSON document serialized as a single string.'
+        : 'Each prompt is a complete bbox JSON document serialized as a single string, identical in structure to the Ideogram shape but with NO color hex codes anywhere.'),
+      'Structure (keys in this exact order):',
+      '{',
+      '  "high_level_description": "",',
+      styleLine,
+      '  "compositional_deconstruction": {',
+      '    "background": "",',
+      '    "elements": [ { "type": "obj", "label": "snake_case_label", "bbox": [y_min, x_min, y_max, x_max], "desc": "" }, ... ]',
+      '  }',
+      '}',
+      '',
+      'high_level_description: a full paragraph describing the complete intended scene — primary subjects, what they are doing, the setting, and the overall visual intent.',
+      'style_description.aesthetics / lighting / photo / medium: concrete prose describing the overall treatment, the light, the camera/lens behaviour (when photographic), and the medium.',
+      'compositional_deconstruction.background: describe ONLY the environment, surfaces, architecture, depth cues, and atmosphere — not the individual foreground subjects.',
+      '',
+      'COORDINATE SYSTEM',
+      '- Every bbox is [y_min, x_min, y_max, x_max] as integers 0-1000, normalized to the canvas (0 = top/left edge, 1000 = bottom/right edge) regardless of pixel size or aspect ratio.',
+      '- y is vertical (top to bottom); x is horizontal (left to right). Always y_min < y_max and x_min < x_max.',
+      '',
+      'ELEMENTS — decompose the scene in DETAIL',
+      '- Identify every distinct, layout-relevant element and give each its own tightly-sized box: primary subjects, secondary subjects, foreground props, midground and background objects, and separable parts of large or complex subjects.',
+      '- Also box the environment regions that structure the frame (e.g. ceiling, floor, left/right background walls or areas), not just the hero subjects.',
+      '- Aim for a rich, specific layout — typically 8-16 boxes for a populated scene. A detailed composition of many precise boxes is strongly preferred over a sparse one with a few oversized, generic boxes.',
+      '- Do NOT place lazy catch-all boxes: never cover a large region with one generic box when that area contains multiple distinguishable elements. Size and position every box tightly to the specific element it represents.',
+      '- Position and scale boxes to reflect the real composition and depth. Overlap is expected and fine when subjects sit in front of one another or a shared prop.',
+      '',
+      'PER-ELEMENT FIELDS',
+      '- type: "obj" for any visual object/subject; "text" ONLY for text that must be rendered in the image.',
+      '- label: a short snake_case identifier with NO spaces.',
+      '- bbox: [y_min, x_min, y_max, x_max], integers 0-1000.',
+      '- desc: a concrete visual description of that element\u2019s appearance, pose, and role in the scene.',
+      '- A "text" element additionally carries a "text" field holding the literal characters to render. Only add text elements when the scene explicitly calls for rendered text; never add unprompted captions, titles, watermarks, or signatures.',
+      '',
+      (withHex
+        ? 'Required keywords go into the descriptive string fields (and hex-code keywords also belong in color_palette as #RRGGBB).'
+        : 'Do not include a color_palette field and do not write hex color codes (#RRGGBB) anywhere in any field; describe colors in plain words instead. Required keywords go into the descriptive string fields.'),
+      'Output compact JSON that parses with JSON.parse. No markdown, no code fences, no commentary.'
+    ];
+    return lines.join('\n');
+  }
+
   const SHAPE_SPECS={
     paragraph:{
       label:'Paragraph',
@@ -351,33 +403,11 @@
     },
     ideogram:{
       label:'Ideogram bbox JSON',
-      spec:[
-        'Each prompt is a complete Ideogram-style JSON document serialized as a single string. Structure:',
-        '{',
-        '  "high_level_description": "",',
-        '  "style_description": { "aesthetics": "", "lighting": "", "photo": "", "medium": "", "color_palette": ["#RRGGBB", ...] },',
-        '  "compositional_deconstruction": {',
-        '    "background": "",',
-        '    "elements": [ { "type": "obj", "label": "snake_case_label", "bbox": [y_min, x_min, y_max, x_max], "desc": "" }, ... ]',
-        '  }',
-        '}',
-        'bbox values are integers 0-1000 normalized to the canvas (0 = top/left, 1000 = bottom/right), y before x, y_min < y_max and x_min < x_max. Place 3-8 tightly-sized elements composing the scene with plausible positions, scale, and depth. An element with "type": "text" additionally carries a "text" field with the literal characters to render, and is only used when the scene calls for rendered text. Required keywords go into the descriptive string fields (and hex-code keywords also belong in color_palette). Output compact JSON that parses with JSON.parse.'
-      ].join('\n')
+      spec:bboxShapeSpec(true)
     },
     krea:{
       label:'Krea bbox JSON (no hex codes)',
-      spec:[
-        'Each prompt is a complete bbox-layout JSON document serialized as a single string, identical in structure to the Ideogram shape but with NO color hex codes anywhere. Structure:',
-        '{',
-        '  "high_level_description": "",',
-        '  "style_description": { "aesthetics": "", "lighting": "", "photo": "", "medium": "" },',
-        '  "compositional_deconstruction": {',
-        '    "background": "",',
-        '    "elements": [ { "type": "obj", "label": "snake_case_label", "bbox": [y_min, x_min, y_max, x_max], "desc": "" }, ... ]',
-        '  }',
-        '}',
-        'Do not include a color_palette field and do not write hex color codes (#RRGGBB) anywhere in any field; describe colors in plain words instead. bbox values are integers 0-1000 normalized to the canvas (0 = top/left, 1000 = bottom/right), y before x, y_min < y_max and x_min < x_max. Place 3-8 tightly-sized elements composing the scene with plausible positions, scale, and depth. An element with "type": "text" additionally carries a "text" field with the literal characters to render, and is only used when the scene calls for rendered text. Required keywords go into the descriptive string fields. Output compact JSON that parses with JSON.parse.'
-      ].join('\n')
+      spec:bboxShapeSpec(false)
     },
     json:{
       label:'Simple JSON',
