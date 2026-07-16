@@ -157,6 +157,7 @@
       <option value="multipara_photo">Multiple Paragraph Photography Focused</option>
       <option value="tags">Tag list (booru / CSV)</option>
       <option value="ideogram">Ideogram bbox JSON</option>
+      <option value="krea">Krea bbox JSON (no hex codes)</option>
       <option value="json">Simple JSON fields</option>
       <option value="yaml">YAML</option>
       <option value="markdown">Markdown</option>
@@ -361,6 +362,21 @@
         '  }',
         '}',
         'bbox values are integers 0-1000 normalized to the canvas (0 = top/left, 1000 = bottom/right), y before x, y_min < y_max and x_min < x_max. Place 3-8 tightly-sized elements composing the scene with plausible positions, scale, and depth. An element with "type": "text" additionally carries a "text" field with the literal characters to render, and is only used when the scene calls for rendered text. Required keywords go into the descriptive string fields (and hex-code keywords also belong in color_palette). Output compact JSON that parses with JSON.parse.'
+      ].join('\n')
+    },
+    krea:{
+      label:'Krea bbox JSON (no hex codes)',
+      spec:[
+        'Each prompt is a complete bbox-layout JSON document serialized as a single string, identical in structure to the Ideogram shape but with NO color hex codes anywhere. Structure:',
+        '{',
+        '  "high_level_description": "",',
+        '  "style_description": { "aesthetics": "", "lighting": "", "photo": "", "medium": "" },',
+        '  "compositional_deconstruction": {',
+        '    "background": "",',
+        '    "elements": [ { "type": "obj", "label": "snake_case_label", "bbox": [y_min, x_min, y_max, x_max], "desc": "" }, ... ]',
+        '  }',
+        '}',
+        'Do not include a color_palette field and do not write hex color codes (#RRGGBB) anywhere in any field; describe colors in plain words instead. bbox values are integers 0-1000 normalized to the canvas (0 = top/left, 1000 = bottom/right), y before x, y_min < y_max and x_min < x_max. Place 3-8 tightly-sized elements composing the scene with plausible positions, scale, and depth. An element with "type": "text" additionally carries a "text" field with the literal characters to render, and is only used when the scene calls for rendered text. Required keywords go into the descriptive string fields. Output compact JSON that parses with JSON.parse.'
       ].join('\n')
     },
     json:{

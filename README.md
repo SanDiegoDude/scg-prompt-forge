@@ -23,8 +23,9 @@ It opens a full-screen forge over the ComfyUI canvas where you can:
   still applies); unreferenced files are still woven into every prompt.
 - Pick an **output shape** from a dropdown — paragraph description,
   multi-paragraph photography-focused, booru/CSV tag list, Ideogram bbox JSON,
-  simple JSON fields, YAML, markdown — or **Custom**, where you describe the
-  shape in plain text and the agent runs with it.
+  Krea bbox JSON (same structure minus color hex codes, since Krea renders hex
+  codes as literal text), simple JSON fields, YAML, markdown — or **Custom**,
+  where you describe the shape in plain text and the agent runs with it.
 - Generate batches of up to 500 prompts. The agent first expands the seed into
   a creative brief plus distinct concept angles, then writes prompts in chunks
   so every prompt gets its own angle instead of 200 near-duplicates.
