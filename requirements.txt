@@ -1,0 +1,7 @@
+# Optional. Only needed if you configure a Vertex AI provider in .env
+# (a "vertex://PROJECT/LOCATION" base URL). It supplies the Google OAuth
+# credentials used to authenticate against Vertex.
+#
+# Everything else uses ComfyUI's bundled aiohttp plus the Python standard
+# library, so no other dependencies are required.
+google-auth>=2.0

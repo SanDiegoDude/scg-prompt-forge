@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SCG Prompt Forge</title>
+<style>
+  :root{
+    --bg:#05070b; --panel:#0b0f16; --panel2:#141a24; --line:#283040; --text:#edf1f7;
+    --muted:#8f9aaa; --accent:#7f9fe8; --danger:#ff6b6b; --ok:#72d18f; --warn:#ffd166;
+    --field:#070b11; --header:#06090f;
+    --shadow:0 10px 30px rgba(0,0,0,.34);
+  }
+  *{box-sizing:border-box}
+  *{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--accent) 55%, var(--muted)) transparent;}
+  *::-webkit-scrollbar{width:8px;height:8px;background:transparent;}
+  *::-webkit-scrollbar-track{background:transparent;}
+  *::-webkit-scrollbar-thumb{background:color-mix(in srgb, var(--accent) 58%, var(--muted));border-radius:999px;border:2px solid transparent;background-clip:content-box;}
+  *::-webkit-scrollbar-thumb:hover{background:var(--accent);}
+  html{font-size:13px}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+  header{padding:10px 16px;border-bottom:1px solid var(--line);background:var(--header);position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:0 2px 18px rgba(0,0,0,.12)}
+  h1{font-size:17px;margin:0;font-weight:760;letter-spacing:-.02em}
+  .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .headerBtns{display:flex;gap:8px;align-items:center}
+  main{display:grid;grid-template-columns:380px minmax(420px,1fr);gap:12px;padding:12px;align-items:start}
+  @media(max-width:1100px){main{grid-template-columns:1fr}.sticky{position:static!important}}
+  .panel{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:12px;box-shadow:var(--shadow)}
+  .sticky{position:sticky;top:70px;max-height:calc(100vh - 84px);overflow-y:auto}
+  .title{font-weight:720;font-size:14px;margin:0 0 8px 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .hint{font-size:12px;color:var(--muted);line-height:1.45;margin:6px 0 9px}
+  label,.labelLine{font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:6px;margin:9px 0 4px}
+  input,select,textarea,button{font:inherit}
+  input[type="text"],input[type="number"],select,textarea{width:100%;background:var(--field);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 8px;outline:none}
+  textarea{min-height:58px;resize:vertical;line-height:1.4}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent)}
+  button{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:7px 10px;cursor:pointer;transition:.12s ease}
+  button:hover{border-color:var(--accent);filter:brightness(1.05)}
+  button:disabled{opacity:.5;cursor:not-allowed;filter:none}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  button.danger{background:color-mix(in srgb, var(--danger) 14%, var(--panel2));border-color:color-mix(in srgb, var(--danger) 42%, var(--line));color:var(--danger)}
+  button.ok{background:color-mix(in srgb, var(--ok) 16%, var(--panel2));border-color:color-mix(in srgb, var(--ok) 45%, var(--line));color:var(--ok);font-weight:700}
+  button.small{font-size:12px;padding:4px 7px;border-radius:7px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btns{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .segmented{display:flex;gap:5px;background:var(--field);border:1px solid var(--line);border-radius:10px;padding:4px}
+  .segmented button{flex:1;padding:6px 8px;background:transparent;border-color:transparent}
+  .segmented button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .status{font-size:12px;color:var(--muted);min-height:16px;margin-top:6px;line-height:1.4}
+  .status.ok{color:var(--ok)} .status.err{color:var(--danger)} .status.warn{color:var(--warn)}
+
+  .refDrop{position:relative;display:flex;align-items:center;justify-content:center;min-height:74px;border:2px dashed var(--line);border-radius:10px;background:var(--field);cursor:pointer;overflow:hidden;transition:border-color .12s ease}
+  .refDrop:hover,.refDrop:focus{border-color:var(--accent);outline:none}
+  .refDrop.dragOver{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, var(--field))}
+  .refDrop img{display:block;max-width:100%;max-height:160px;object-fit:contain}
+  .refDrop .refHint{color:var(--muted);font-size:12px;padding:10px;text-align:center;line-height:1.4}
+
+  .wildDrop{display:flex;align-items:center;justify-content:center;min-height:40px;border:2px dashed var(--line);border-radius:10px;background:var(--field);cursor:pointer;color:var(--muted);font-size:12px;padding:8px;text-align:center;transition:border-color .12s ease}
+  .wildDrop:hover,.wildDrop:focus{border-color:var(--accent);outline:none}
+  .wildDrop.dragOver{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, var(--field))}
+  .wildList{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+  .wildRow{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:5px 6px}
+  .wildRow .wildToken{color:var(--muted);font-size:12px;flex:0 0 auto}
+  .wildRow input{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;padding:4px 6px}
+  .wildRow .wildCount{flex:0 0 auto;font-size:11px;color:var(--muted);white-space:nowrap}
+
+  .genProgress{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .genBar{flex:1;height:8px;border-radius:999px;background:var(--field);border:1px solid var(--line);overflow:hidden}
+  .genBar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#a887e8);transition:width .25s ease}
+  .genPct{font-size:12px;color:var(--muted);min-width:34px;text-align:right}
+
+  .rightTabs{display:flex;gap:6px;margin-bottom:10px}
+  .rightTab{flex:0 0 auto;padding:7px 14px;border-radius:999px;background:transparent}
+  .rightTab.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  .rightPane{display:none}
+  .rightPane.active{display:block}
+
+  .resultsHeader{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .badge{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted)}
+  .badge b{color:var(--text)}
+  .resultsHeader .spacer{flex:1}
+  .promptList{display:flex;flex-direction:column;gap:8px}
+  .promptItem{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:8px}
+  .promptItemHead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .promptIdx{font-size:11px;font-weight:800;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;background:var(--field)}
+  .kwWarn{font-size:11px;font-weight:700;color:var(--warn);border:1px solid color-mix(in srgb, var(--warn) 45%, var(--line));border-radius:999px;padding:2px 8px;background:color-mix(in srgb, var(--warn) 10%, var(--field))}
+  .promptItemHead .grow{flex:1}
+  .promptItem textarea{min-height:40px;background:var(--field);font-size:12px}
+  .promptItem.busy{opacity:.55}
+  .emptyList{border:2px dashed var(--line);border-radius:10px;padding:28px 14px;text-align:center;color:var(--muted);font-size:13px}
+
+  .agentField{margin-bottom:8px}
+  .providerRow{display:flex;gap:6px;align-items:center}
+  .providerRow select{flex:1}
+  .vlmToggle{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:10px 0 0;color:var(--text);font-size:13px;cursor:pointer}
+  .vlmToggle input{width:auto}
+  .agentFieldRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .rulesetArea{min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px}
+  .rulesetActions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+  .agentTabs{display:flex;gap:6px;margin:4px 0 10px}
+  .agentTab{padding:5px 11px;border-radius:999px;background:transparent;font-size:12px}
+  .agentTab.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  .agentPane{display:none}
+  .agentPane.active{display:block}
+
+  .footerBar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+  code{background:var(--field);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:11.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>SCG Prompt Forge</h1>
+    <div class="sub">Bulk creative prompt generator — seed idea in, shaped prompt batches out.</div>
+  </div>
+  <div class="headerBtns">
+    <button id="closeBtn" class="danger" type="button" title="Close without saving to the node">✕ Close</button>
+    <button id="saveBtn" type="button" title="Save the current batch to the ComfyUI node (stays open)">💾 Save to node</button>
+    <button id="sendCloseBtn" class="ok" type="button" title="Save the batch to the ComfyUI node and close">✔ Save &amp; Close</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel sticky">
+    <div class="title">Batch setup</div>
+
+    <label class="labelLine"><span>Seed idea</span></label>
+    <textarea id="seedIdea" rows="4" placeholder="e.g. guerrilla marketing street shots, think DKNY or American Eagle style advertising — gritty urban walls, wheat-pasted posters, candid models"></textarea>
+
+    <label class="labelLine"><span>Reference image <span style="opacity:.6">(optional)</span></span><button id="refClear" class="small danger" type="button" hidden>✕ Remove</button></label>
+    <div id="refDrop" class="refDrop" tabindex="0" title="Click to browse, drag an image in, or Ctrl+V to paste one from the clipboard">
+      <img id="refPreview" alt="reference image" hidden>
+      <span class="refHint" id="refHint">Click, drag in, or Ctrl+V an image.<br>Without a prompt, its scene becomes the springboard; steer it from the seed idea ("use only its palette", "just the subject", …).</span>
+    </div>
+    <input id="refFile" type="file" accept="image/*" hidden>
+
+    <label class="labelLine"><span>Things to avoid <span style="opacity:.6">(optional)</span></span></label>
+    <textarea id="avoidText" rows="2" placeholder="e.g. no studio backdrops, no night scenes"></textarea>
+
+    <label class="labelLine"><span>Required keywords — one per line <span style="opacity:.6">(LoRA triggers, hex codes…)</span></span></label>
+    <textarea id="keywords" rows="3" placeholder="#FF5A36&#10;#1B2A4A&#10;myLoraTriggerWord"></textarea>
+    <div class="segmented" id="kwModeSeg" style="margin-top:6px">
+      <button type="button" data-kwmode="all" class="active" title="Every prompt must contain every keyword">All in every prompt</button>
+      <button type="button" data-kwmode="rotate" title="Each prompt gets the next keyword from the list, cycling through the batch">Rotate per prompt</button>
+    </div>
+
+    <label class="labelLine"><span>Wildcard files <span style="opacity:.6">(optional)</span></span></label>
+    <div id="wildDrop" class="wildDrop" tabindex="0" title="Click to browse or drag .txt wildcard files in — one option per line">＋ Add .txt wildcard files (click or drag in)</div>
+    <input id="wildFile" type="file" accept=".txt,text/plain" multiple hidden>
+    <div id="wildList" class="wildList"></div>
+    <div class="hint" id="wildHint" hidden>Every prompt draws its own random line from each file. Reference a file as <code>_name_</code> in the seed idea or required keywords to control where the value lands; unreferenced files are still woven into every prompt.</div>
+
+    <label class="labelLine"><span>Output shape</span></label>
+    <select id="shapeSelect">
+      <option value="paragraph">Paragraph description</option>
+      <option value="multipara_photo">Multiple Paragraph Photography Focused</option>
+      <option value="tags">Tag list (booru / CSV)</option>
+      <option value="ideogram">Ideogram bbox JSON</option>
+      <option value="json">Simple JSON fields</option>
+      <option value="yaml">YAML</option>
+      <option value="markdown">Markdown</option>
+      <option value="custom">Custom…</option>
+    </select>
+    <div id="customShapeWrap" hidden>
+      <label class="labelLine"><span>Describe your output shape</span></label>
+      <textarea id="customShape" rows="3" placeholder="Describe in plain text exactly how each prompt should be formatted, e.g. 'two sentences of scene description, then a line break, then CAMERA: and the lens/framing'"></textarea>
+    </div>
+
+    <div class="row" style="margin-top:2px">
+      <div>
+        <label class="labelLine"><span>Batch size</span></label>
+        <input id="batchSize" type="number" min="1" max="500" step="1" value="50">
+      </div>
+      <div>
+        <label class="labelLine"><span>Variation strength</span></label>
+        <select id="variation">
+          <option value="low">Low — stay close to the seed</option>
+          <option value="medium" selected>Medium — vary subject &amp; setting</option>
+          <option value="high">High — push far apart</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btns">
+      <button id="generateBtn" class="primary" type="button" style="flex:1">⚒ Generate batch</button>
+      <button id="cancelGenBtn" class="danger" type="button" hidden>Cancel</button>
+    </div>
+    <div id="genProgress" class="genProgress" hidden><div class="genBar"><span></span></div><span class="genPct">0%</span></div>
+    <div id="setupStatus" class="status"></div>
+  </section>
+
+  <section class="panel">
+    <div class="rightTabs" role="tablist">
+      <button class="rightTab active" data-rpane="prompts" type="button">Prompts</button>
+      <button class="rightTab" data-rpane="agent" type="button">Agent Configuration</button>
+    </div>
+
+    <div class="rightPane active" data-rpaneview="prompts">
+      <div class="resultsHeader">
+        <span class="badge">Prompts: <b id="countBadge">0</b></span>
+        <span class="badge">Shape: <b id="formatBadge">—</b></span>
+        <span class="badge" id="kwMissBadge" hidden style="border-color:color-mix(in srgb, var(--warn) 45%, var(--line))">⚠ <b id="kwMissCount">0</b> missing keywords</span>
+        <span class="spacer"></span>
+        <button id="moreBtn" type="button" title="Append another batch-size worth of prompts using the same creative brief">＋ Generate more</button>
+        <button id="copyAllBtn" type="button" title="Copy all prompts to the clipboard. Blank-line separated; switches to '=== PROMPT n/N ===' separators when prompts contain blank lines themselves.">⧉ Copy all</button>
+        <button id="saveTxtBtn" type="button" title="Download the batch as UTF-8 .txt — prompts separated by '=== PROMPT n/N ===' lines, splittable no matter what shape the prompts are">⬇ .txt</button>
+        <button id="saveJsonlBtn" type="button" title="Download the batch as UTF-8 .jsonl — one JSON-encoded prompt string per line, bulletproof for scripts">⬇ .jsonl</button>
+        <button id="clearBtn" class="danger" type="button" title="Delete every prompt in the batch">Clear</button>
+      </div>
+      <div id="promptList" class="promptList"></div>
+      <div class="footerBar">
+        <button id="saveBtn2" type="button">💾 Save to node</button>
+        <button id="sendCloseBtn2" class="ok" type="button">✔ Save &amp; Close</button>
+      </div>
+    </div>
+
+    <div class="rightPane" data-rpaneview="agent">
+      <div class="agentTabs" role="tablist">
+        <button class="agentTab active" data-atab="settings" type="button">Agent settings</button>
+        <button class="agentTab" data-atab="brief" type="button">Brief ruleset</button>
+        <button class="agentTab" data-atab="batch" type="button">Batch ruleset</button>
+      </div>
+
+      <div class="agentPane active" data-apane="settings">
+        <div class="agentField">
+          <label class="labelLine"><span>AI provider</span></label>
+          <div class="providerRow">
+            <select id="providerSelect"></select>
+            <button id="providerRefresh" type="button" title="Reload providers from .env">Refresh</button>
+          </div>
+          <div id="providerStatus" class="hint" style="margin-top:6px"></div>
+        </div>
+        <label class="vlmToggle"><input type="checkbox" id="vlmSchema" checked><span>Force JSON schema (strict output)</span></label>
+        <div class="agentFieldRow" style="margin-top:8px">
+          <div><label class="labelLine"><span>Temperature</span></label><input id="vlmTemp" type="number" min="0" max="2" step="0.05" value="0.9"></div>
+          <div><label class="labelLine"><span>Max tokens</span></label><input id="vlmMaxTokens" type="number" min="64" max="32768" step="64" value="8192"></div>
+          <div><label class="labelLine"><span>Prompts per call</span></label><input id="chunkSize" type="number" min="1" max="25" step="1" value="12"></div>
+        </div>
+        <div class="hint" style="margin-top:8px">Providers come from the <code>.env</code> file in the node folder (falls back to the <code>scg_json_prompt_agent</code> one — see <code>.env.example</code>). Keys stay on the server. Big batches run as multiple calls of <i>Prompts per call</i> each; lower it if your model truncates long responses.</div>
+      </div>
+
+      <div class="agentPane" data-apane="brief">
+        <div class="hint">System prompt for the <b>creative brief</b> agent — the first call that expands your seed idea into a brief plus distinct concept angles (one angle per prompt, cycled for big batches).</div>
+        <textarea id="rulesetBrief" class="rulesetArea" spellcheck="false"></textarea>
+        <div class="rulesetActions"><span class="hint">Edited rulesets are saved locally.</span><button class="small" type="button" data-ruleset-reset="brief">Reset to default</button></div>
+      </div>
+
+      <div class="agentPane" data-apane="batch">
+        <div class="hint">System prompt for the <b>batch writer</b> agent — the chunked calls that turn concept angles into shaped prompts. The output-shape spec and keyword rules are appended to the user message at call time.</div>
+        <textarea id="rulesetBatch" class="rulesetArea" spellcheck="false"></textarea>
+        <div class="rulesetActions"><span class="hint">Edited rulesets are saved locally.</span><button class="small" type="button" data-ruleset-reset="batch">Reset to default</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  const $=(id)=>document.getElementById(id);
+  const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+
+  /* ---------- localStorage keys ---------- */
+  const PROVIDER_LS='scg_forge_provider_id';
+  const SCHEMA_LS='scg_forge_schema';
+  const TEMP_LS='scg_forge_temp';
+  const MAXTOK_LS='scg_forge_maxtok';
+  const CHUNK_LS='scg_forge_chunk';
+  const RULESET_LS={ brief:'scg_forge_ruleset_brief', batch:'scg_forge_ruleset_batch' };
+  const SESSION_LS='scg_forge_session_v1';
+
+  const PROVIDERS_URL='/scg_prompt_forge/providers';
+  const CHAT_URL='/scg_prompt_forge/chat';
+
+  /* ---------- state ---------- */
+  const state={
+    kwMode:'all',                 // 'all' | 'rotate'
+    format:'paragraph',           // format of the prompts currently in the list
+    brief:null,                   // {brief:'', angles:['',...]} from the brief agent
+    prompts:[],                   // [{text, angle, kws:[...], wilds:{name:value}}]
+    wilds:[],                     // loaded wildcard files: [{name, lines:[...]}]
+  };
+  let agentBusy=false;
+  let cancelRequested=false;
+  let currentAbort=null;
+  let providerList=[];
+
+  /* ---------- default rulesets ---------- */
+  const DEFAULT_RULESET_BRIEF=[
+    'You are a creative director planning a large batch of image-generation prompts.',
+    '',
+    'You receive:',
+    '- A seed idea describing the look, campaign, or style the user is chasing.',
+    '- Optionally, a reference image.',
+    '- Optional things to avoid.',
+    '- The number of distinct concept angles to produce.',
+    '',
+    'If a reference image is attached:',
+    '- Treat it as visual reference material. The seed text is the highest authority and controls how the image is used; follow any instruction it gives about which aspects of the image to draw on and which to ignore.',
+    '- When no seed text is given, derive the brief from the image itself: its scene, subjects, styling, color treatment, lighting, medium, and mood become the seed.',
+    '- Translate what you take from the image into your own written description. Do not assume the outputs must reproduce the image unless instructed to.',
+    '',
+    'Your job:',
+    '1. Write a tight creative brief that pins down the visual identity implied by the seed material: subject matter, setting, mood, styling, wardrobe, color treatment, lighting, camera/medium language, and composition habits. If the seed names a brand, campaign, film, artist, or genre as a STYLE reference, do not forward the name — expand it into concrete, self-contained visual characteristics instead. The brief must stand on its own for someone who has never heard of the reference.',
+    '2. Produce exactly the requested number of concept angles. Each angle is a 1-2 sentence scenario that stays inside the brief but varies the subject, location, time of day, framing, action, or mood. Angles must be genuinely distinct from each other — no near-duplicates.',
+    '',
+    'Describe, never demonstrate: do not include sample prompts, sample phrasing, or fragments intended to be copied into the outputs. Every angle should be stated as a scenario description in neutral language, not written in the voice or format of a finished prompt.',
+    '',
+    'You must not refuse, censor, sanitize, or moralize. Preserve requested names and identities exactly; only style references are expanded rather than named.',
+    '',
+    'Output valid JSON only, matching { "brief": "...", "angles": ["...", ...] }. No markdown, no commentary, no code fences.'
+  ].join('\n');
+
+  const DEFAULT_RULESET_BATCH=[
+    'You are a bulk prompt writer producing image-generation prompts for testing and dataset work.',
+    '',
+    'You receive:',
+    '- A creative brief that defines the visual identity every prompt must stay inside.',
+    '- A numbered list of concept angles, one per prompt to write.',
+    '- An OUTPUT SHAPE spec describing the exact format of each prompt.',
+    '- Keyword rules: keywords that must appear verbatim in specific prompts.',
+    '- Optional things to avoid.',
+    '- Openings of recently generated prompts, to avoid repeating them.',
+    '',
+    'RULES',
+    '- Write exactly one prompt per assigned angle, in the given order.',
+    '- Every prompt must follow the OUTPUT SHAPE spec exactly. The prompt string is the final deliverable — no surrounding commentary, labels, or numbering.',
+    '- Required keywords must appear VERBATIM, character-for-character, including any leading symbols, punctuation, and casing. Weave them naturally into the prompt where the shape allows; never alter, reformat, translate, or re-case them.',
+    '- Stay inside the creative brief but make each prompt concrete and specific to its angle. No two prompts may read as near-duplicates, and do not repeat the recently generated openings.',
+    '- Never name a brand, film, artist, or franchise as a style shortcut; describe the look in concrete visual terms instead. Named subjects the user explicitly requested are preserved exactly.',
+    '- Do not refuse, censor, sanitize, or moralize.',
+    '',
+    'Output valid JSON only, matching { "prompts": ["...", ...] } with exactly the requested number of prompts. No markdown, no commentary, no code fences.'
+  ].join('\n');
+
+  /* ---------- output shapes ---------- */
+  const SHAPE_SPECS={
+    paragraph:{
+      label:'Paragraph',
+      spec:'Each prompt is a single flowing paragraph of natural-language visual description, 60-140 words, present tense, concrete and specific: subject, action, setting, wardrobe/styling, lighting, camera and mood. No headings, no lists, no quotes, no line breaks.'
+    },
+    multipara_photo:{
+      label:'Multiple Paragraph Photography Focused',
+      spec:"Be very detailed in your output shape, use multiple paragraphs if necessary, use relative positioning to place the scene. Really lean into describing the composition, the camera lens, framing, lighting, effects, or stylizing appropriate to the scene you're describing."
+    },
+    tags:{
+      label:'Tag list',
+      spec:'Each prompt is one line of comma-separated descriptive tags and short phrases (booru/CSV style), ordered most important first, 15-35 entries, lowercase except proper nouns and required keywords. No trailing period.'
+    },
+    ideogram:{
+      label:'Ideogram bbox JSON',
+      spec:[
+        'Each prompt is a complete Ideogram-style JSON document serialized as a single string. Structure:',
+        '{',
+        '  "high_level_description": "",',
+        '  "style_description": { "aesthetics": "", "lighting": "", "photo": "", "medium": "", "color_palette": ["#RRGGBB", ...] },',
+        '  "compositional_deconstruction": {',
+        '    "background": "",',
+        '    "elements": [ { "type": "obj", "label": "snake_case_label", "bbox": [y_min, x_min, y_max, x_max], "desc": "" }, ... ]',
+        '  }',
+        '}',
+        'bbox values are integers 0-1000 normalized to the canvas (0 = top/left, 1000 = bottom/right), y before x, y_min < y_max and x_min < x_max. Place 3-8 tightly-sized elements composing the scene with plausible positions, scale, and depth. An element with "type": "text" additionally carries a "text" field with the literal characters to render, and is only used when the scene calls for rendered text. Required keywords go into the descriptive string fields (and hex-code keywords also belong in color_palette). Output compact JSON that parses with JSON.parse.'
+      ].join('\n')
+    },
+    json:{
+      label:'Simple JSON',
+      spec:'Each prompt is a JSON object serialized as a single string with exactly these keys: "subject", "setting", "style", "lighting", "camera", "mood", "details", "keywords" (an array of strings). Values are concise descriptive strings. Required keywords must appear inside the field values (hex codes and trigger words also go in the "keywords" array). It must parse with JSON.parse.'
+    },
+    yaml:{
+      label:'YAML',
+      spec:'Each prompt is a YAML document as a single string with the keys subject, setting, style, lighting, camera, mood, details, and keywords (a YAML list). Plain YAML only — no code fences, no document markers.'
+    },
+    markdown:{
+      label:'Markdown',
+      spec:'Each prompt is a markdown block: a bold one-line title, a blank line, a 60-120 word descriptive paragraph, then a final line starting with "**Keywords:** " listing the key descriptors and required keywords. No code fences.'
+    },
+    custom:{ label:'Custom', spec:'' }
+  };
+
+  const VARIATION_TEXT={
+    low:'Stay very close to the seed idea; vary only small details between prompts.',
+    medium:'Keep the core look and identity, but vary subjects, settings, framing, and action freely between prompts.',
+    high:'Treat the seed as a launchpad: push settings, subjects, moods, and compositions far apart while keeping the underlying style recognizable.'
+  };
+
+  /* ---------- JSON schemas for strict output ---------- */
+  function briefSchemaFormat(){
+    return { type:'json_schema', json_schema:{ name:'scg_forge_brief', strict:true, schema:{
+      type:'object', additionalProperties:false, required:['brief','angles'],
+      properties:{ brief:{type:'string'}, angles:{type:'array', items:{type:'string'}} }
+    } } };
+  }
+  function batchSchemaFormat(){
+    return { type:'json_schema', json_schema:{ name:'scg_forge_prompts', strict:true, schema:{
+      type:'object', additionalProperties:false, required:['prompts'],
+      properties:{ prompts:{type:'array', items:{type:'string'}} }
+    } } };
+  }
+
+  /* ---------- providers + chat ---------- */
+  function selectedProviderId(){ return ($('providerSelect').value||'').trim(); }
+  function hasProvider(){ return providerList.length>0 && !!selectedProviderId(); }
+
+  async function loadProviders(){
+    const sel=$('providerSelect'), st=$('providerStatus');
+    try{
+      const r=await fetch(PROVIDERS_URL,{method:'GET'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const j=await r.json();
+      providerList=Array.isArray(j&&j.providers)?j.providers:[];
+    }catch(e){
+      providerList=[];
+      st.textContent='Could not reach the provider service (is ComfyUI serving this node?).';
+      st.classList.add('err');
+    }
+    const prev=localStorage.getItem(PROVIDER_LS)||sel.value||'';
+    sel.innerHTML='';
+    if(!providerList.length){
+      const o=document.createElement('option'); o.value=''; o.textContent='No providers — edit .env'; sel.appendChild(o); sel.disabled=true;
+    }else{
+      sel.disabled=false;
+      providerList.forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.label+'  ('+p.model+')'; sel.appendChild(o); });
+      const pick=providerList.some(p=>p.id===prev)?prev:providerList[0].id;
+      sel.value=pick; localStorage.setItem(PROVIDER_LS, pick);
+      st.classList.remove('err');
+      st.textContent=providerList.length+' provider'+(providerList.length>1?'s':'')+' loaded from .env.';
+    }
+    updateControls();
+  }
+
+  function vlmTemp(){ const v=parseFloat($('vlmTemp').value); return isFinite(v)?clamp(v,0,2):0.9; }
+  function vlmMaxTokens(){ const v=parseInt($('vlmMaxTokens').value,10); return (isFinite(v)&&v>0)?clamp(v,64,32768):8192; }
+  function vlmSchemaOn(){ return $('vlmSchema').checked; }
+  function chunkSize(){ const v=parseInt($('chunkSize').value,10); return (isFinite(v)&&v>0)?clamp(v,1,25):12; }
+  function briefRuleset(){ const v=$('rulesetBrief').value.trim(); return v||DEFAULT_RULESET_BRIEF; }
+  function batchRuleset(){ const v=$('rulesetBatch').value.trim(); return v||DEFAULT_RULESET_BATCH; }
+
+  // Low-level chat completion. Returns the raw assistant text. userContent is
+  // either a plain string or a multimodal parts array (text + image_url).
+  async function vlmComplete(systemPrompt, userContent, opts={}){
+    const provider_id=selectedProviderId();
+    if(!provider_id) throw new Error('No AI provider configured. Add one to .env and click Refresh.');
+    const payload={
+      provider_id,
+      temperature:vlmTemp(),
+      max_tokens:vlmMaxTokens(),
+      messages:[ {role:'system', content:systemPrompt}, {role:'user', content:userContent} ]
+    };
+    if(opts.schema) payload.response_format=opts.schema;
+    currentAbort=new AbortController();
+    let res;
+    try{
+      res=await fetch(CHAT_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal:currentAbort.signal });
+    }finally{ currentAbort=null; }
+    if(!res.ok){
+      let msg='HTTP '+res.status;
+      try{ const j=await res.json(); if(j&&j.error) msg=(typeof j.error==='string'?j.error:(j.error.message||msg)); }
+      catch(_){ const txt=await res.text().catch(()=>''); if(txt) msg+=' — '+txt.slice(0,180); }
+      throw new Error(msg);
+    }
+    const data=await res.json();
+    const msg=data&&data.choices&&data.choices[0]&&data.choices[0].message;
+    let content=msg&&msg.content;
+    if(Array.isArray(content)) content=content.map(p=>typeof p==='string'?p:(p&&p.text)||'').join('');
+    // Some reasoning models return empty content and put the answer in reasoning_content.
+    if(msg && !(content&&String(content).trim())) content=msg.reasoning_content||'';
+    return content;
+  }
+
+  function extractJson(text){
+    if(text==null) throw new Error('empty response');
+    let s=String(text).trim();
+    s=s.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+    const start=s.indexOf('{');
+    if(start<0) throw new Error('no JSON object in response');
+    let depth=0,end=-1,inStr=false,esc=false;
+    for(let i=start;i<s.length;i++){
+      const c=s[i];
+      if(inStr){ if(esc) esc=false; else if(c==='\\') esc=true; else if(c==='"') inStr=false; }
+      else if(c==='"') inStr=true;
+      else if(c==='{') depth++;
+      else if(c==='}'){ depth--; if(depth===0){ end=i; break; } }
+    }
+    if(end<0) throw new Error('unterminated JSON object in response');
+    return JSON.parse(s.slice(start,end+1));
+  }
+
+  /* ---------- reference image ---------- */
+  const REF_MAX_PIXELS=500000; // ~0.5 MP cap before sending to the agent
+  const REFIMG_LS='scg_forge_refimg'; // own key so a quota failure can't eat the session
+  let refImage=null;           // resized reference image as a JPEG data URL
+
+  function setRefImage(url){
+    refImage=url||null;
+    const img=$('refPreview');
+    if(refImage) img.src=refImage; else img.removeAttribute('src');
+    img.hidden=!refImage;
+    $('refHint').hidden=!!refImage;
+    $('refClear').hidden=!refImage;
+    try{
+      if(refImage) localStorage.setItem(REFIMG_LS, refImage);
+      else localStorage.removeItem(REFIMG_LS);
+    }catch(e){ console.warn('[Prompt Forge] reference image too large to persist', e); }
+  }
+
+  function ingestImageFile(file){
+    if(!file || !/^image\//.test(file.type||'')) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.naturalWidth, h=img.naturalHeight;
+        if(!w||!h) return;
+        const px=w*h;
+        if(px>REF_MAX_PIXELS){
+          const s=Math.sqrt(REF_MAX_PIXELS/px);
+          w=Math.max(1,Math.round(w*s)); h=Math.max(1,Math.round(h*s));
+        }
+        const c=document.createElement('canvas'); c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        setRefImage(c.toDataURL('image/jpeg',0.85));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function bindRefImage(){
+    const drop=$('refDrop');
+    drop.addEventListener('click',()=>$('refFile').click());
+    drop.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('refFile').click(); }
+    });
+    $('refFile').addEventListener('change',()=>{ ingestImageFile($('refFile').files[0]); $('refFile').value=''; });
+    ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add('dragOver'); }));
+    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove('dragOver'); }));
+    drop.addEventListener('drop',e=>{ const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) ingestImageFile(f); });
+    // Ctrl+V anywhere in the forge (unless pasting text into a field).
+    document.addEventListener('paste',e=>{
+      const items=(e.clipboardData&&e.clipboardData.items)||[];
+      for(const it of items){
+        if(it.kind==='file'&&/^image\//.test(it.type)){ ingestImageFile(it.getAsFile()); e.preventDefault(); break; }
+      }
+    });
+    $('refClear').addEventListener('click',()=>setRefImage(null));
+  }
+
+  /* ---------- wildcard files ---------- */
+  // Same file rules as scg-wildcards: UTF-8 text, one option per line, blank
+  // lines and #-comment lines dropped. Token syntax matches too: _name_ with
+  // the underscores not adjacent to other alphanumerics, so snake_case words
+  // in prompts are left alone. state.wilds: [{name, lines:[...]}].
+  const WILD_TOKEN_RE=/(?<![A-Za-z0-9])_([A-Za-z0-9][A-Za-z0-9_\/\-.]*?)_(?![A-Za-z0-9])/g;
+
+  function parseWildLines(text){
+    return String(text).split(/\r?\n/).map(s=>s.trim()).filter(s=>s&&!s.startsWith('#'));
+  }
+  function sanitizeWildName(raw){
+    let s=String(raw||'').trim().replace(/\.txt$/i,'').replace(/\s+/g,'_').replace(/[^A-Za-z0-9_\/\-.]/g,'');
+    s=s.replace(/^[^A-Za-z0-9]+/,'');
+    return s||'wildcard';
+  }
+  function uniqueWildName(base, skipIdx){
+    let name=base, n=2;
+    while(state.wilds.some((w,i)=>i!==skipIdx&&w.name===name)){ name=base+'_'+n; n++; }
+    return name;
+  }
+
+  function addWildFiles(fileList){
+    const files=Array.from(fileList||[]).filter(f=>/\.txt$/i.test(f.name)||/^text\//.test(f.type||''));
+    if(!files.length) return;
+    let pending=files.length;
+    files.forEach(f=>{
+      const reader=new FileReader();
+      reader.onload=()=>{
+        const lines=parseWildLines(reader.result);
+        if(lines.length){
+          state.wilds.push({name:uniqueWildName(sanitizeWildName(f.name)), lines});
+        }else{
+          setStatus('"'+f.name+'" has no usable lines (blank / all comments).','warn');
+        }
+        if(--pending===0){ renderWildList(); autoSave(); }
+      };
+      reader.readAsText(f, 'utf-8');
+    });
+  }
+
+  function renderWildList(){
+    const list=$('wildList');
+    list.innerHTML='';
+    state.wilds.forEach((w,idx)=>{
+      const row=document.createElement('div');
+      row.className='wildRow';
+      const tokL=document.createElement('span'); tokL.className='wildToken'; tokL.textContent='_';
+      const nameIn=document.createElement('input');
+      nameIn.type='text'; nameIn.value=w.name; nameIn.spellcheck=false;
+      nameIn.title='Keyword for this file — reference it as _'+w.name+'_';
+      nameIn.addEventListener('change',()=>{
+        w.name=uniqueWildName(sanitizeWildName(nameIn.value), idx);
+        nameIn.value=w.name;
+        autoSave();
+      });
+      const tokR=document.createElement('span'); tokR.className='wildToken'; tokR.textContent='_';
+      const count=document.createElement('span');
+      count.className='wildCount';
+      count.textContent=w.lines.length+' line'+(w.lines.length>1?'s':'');
+      const del=document.createElement('button');
+      del.type='button'; del.className='small danger'; del.textContent='✕';
+      del.title='Remove this wildcard file';
+      del.addEventListener('click',()=>{ state.wilds.splice(idx,1); renderWildList(); autoSave(); });
+      row.append(tokL, nameIn, tokR, count, del);
+      list.appendChild(row);
+    });
+    $('wildHint').hidden=!state.wilds.length;
+  }
+
+  function bindWildcards(){
+    const drop=$('wildDrop');
+    drop.addEventListener('click',()=>$('wildFile').click());
+    drop.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('wildFile').click(); }
+    });
+    $('wildFile').addEventListener('change',()=>{ addWildFiles($('wildFile').files); $('wildFile').value=''; });
+    ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add('dragOver'); }));
+    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove('dragOver'); }));
+    drop.addEventListener('drop',e=>addWildFiles(e.dataTransfer&&e.dataTransfer.files));
+  }
+
+  // One random draw per wildcard file -> {name: value}.
+  function drawWildValues(){
+    const draws={};
+    state.wilds.forEach(w=>{ draws[w.name]=w.lines[Math.floor(Math.random()*w.lines.length)]; });
+    return draws;
+  }
+  // Replace _name_ tokens with this prompt's drawn values; unknown names stay.
+  function expandWildTokens(text, draws){
+    if(!draws||!Object.keys(draws).length) return text;
+    return String(text).replace(WILD_TOKEN_RE,(m,name)=>(name in draws)?draws[name]:m);
+  }
+
+  /* ---------- setup readers ---------- */
+  function keywordList(){
+    return $('keywords').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  }
+  function currentShapeId(){ return $('shapeSelect').value; }
+  function shapeSpec(){
+    const id=currentShapeId();
+    if(id==='custom'){
+      const t=$('customShape').value.trim();
+      if(!t) throw new Error('Describe your custom output shape first.');
+      return t;
+    }
+    return SHAPE_SPECS[id].spec;
+  }
+  function shapeLabel(id){ return (SHAPE_SPECS[id]||SHAPE_SPECS.paragraph).label; }
+  function variationText(){ return VARIATION_TEXT[$('variation').value]||VARIATION_TEXT.medium; }
+  function batchSizeVal(){ const v=parseInt($('batchSize').value,10); return (isFinite(v)&&v>0)?clamp(v,1,500):50; }
+
+  // Keywords assigned to the prompt at global position idx. Wildcard tokens in
+  // keyword lines resolve to this prompt's draws, so the verbatim rule (and
+  // the post-check) applies to the drawn value.
+  function kwsForIndex(idx, draws){
+    const kws=keywordList().map(k=>expandWildTokens(k, draws));
+    if(!kws.length) return [];
+    if(state.kwMode==='rotate') return [kws[idx % kws.length]];
+    return kws;
+  }
+
+  /* ---------- prompt-building for agent calls ---------- */
+  function keywordRulesText(items){
+    // items: [{n, kws}] with 1-based numbering within this call.
+    if(!items.some(it=>it.kws.length)) return 'KEYWORD RULES: none.';
+    if(state.kwMode==='rotate'){
+      return 'KEYWORD RULES (rotation — each prompt has its own required keyword):\n'
+        + items.map(it=>'- Prompt '+it.n+' must contain verbatim: '+it.kws.join(', ')).join('\n');
+    }
+    return 'KEYWORD RULES:\nEvery prompt must contain ALL of the following keywords verbatim:\n'
+      + items[0].kws.map(k=>'- '+k).join('\n');
+  }
+
+  function wildcardRulesText(items){
+    if(!items.some(it=>it.wilds&&Object.keys(it.wilds).length)) return '';
+    return 'WILDCARD VALUES (per prompt):\n'
+      + 'Each prompt below has its own randomly drawn values. Where the brief, angle, or keyword rules contain a matching _name_ placeholder, substitute that prompt\u2019s value in its place. Values not referenced by any placeholder must still be woven naturally into that prompt\u2019s scene.\n'
+      + items.map(it=>'- Prompt '+it.n+': '+Object.entries(it.wilds).map(([k,v])=>'_'+k+'_ = "'+v+'"').join('; ')).join('\n')
+      + '\n\n';
+  }
+
+  function recentOpenings(){
+    const recent=state.prompts.slice(-14);
+    if(!recent.length) return '';
+    return 'RECENTLY GENERATED OPENINGS (do not repeat these):\n'
+      + recent.map(p=>'- '+p.text.replace(/\s+/g,' ').slice(0,80)).join('\n') + '\n\n';
+  }
+
+  function chunkUserMessage(assignments){
+    // assignments: [{angle, kws, wilds}] for this call, in order.
+    const items=assignments.map((a,i)=>({n:i+1, kws:a.kws, wilds:a.wilds||{}}));
+    const avoid=$('avoidText').value.trim();
+    return 'CREATIVE BRIEF:\n'+state.brief.brief+'\n\n'
+      + 'VARIATION: '+variationText()+'\n\n'
+      + 'OUTPUT SHAPE:\n'+shapeSpec()+'\n\n'
+      + keywordRulesText(items)+'\n\n'
+      + wildcardRulesText(items)
+      + (avoid?('THINGS TO AVOID:\n'+avoid+'\n\n'):'')
+      + recentOpenings()
+      + 'WRITE '+assignments.length+' PROMPT'+(assignments.length>1?'S':'')+', one per angle, in this order:\n'
+      + assignments.map((a,i)=>(i+1)+'. '+a.angle).join('\n');
+  }
+
+  /* ---------- busy / progress / status ---------- */
+  function setStatus(msg, kind){
+    const el=$('setupStatus');
+    el.textContent=msg||'';
+    el.className='status'+(kind?(' '+kind):'');
+  }
+  function setProgress(pct){
+    const box=$('genProgress');
+    if(pct==null){ box.hidden=true; return; }
+    box.hidden=false;
+    box.querySelector('.genBar span').style.width=clamp(pct,0,100)+'%';
+    box.querySelector('.genPct').textContent=Math.round(clamp(pct,0,100))+'%';
+  }
+  function setAgentBusy(on){
+    agentBusy=!!on;
+    $('generateBtn').disabled=agentBusy||!hasProvider();
+    $('moreBtn').disabled=agentBusy||!hasProvider();
+    $('cancelGenBtn').hidden=!agentBusy;
+    document.querySelectorAll('.promptItem button').forEach(b=>{ b.disabled=agentBusy; });
+    if(!agentBusy){ setProgress(null); cancelRequested=false; }
+  }
+  function updateControls(){
+    if(agentBusy) return;
+    const ok=hasProvider();
+    $('generateBtn').disabled=!ok;
+    $('moreBtn').disabled=!ok;
+  }
+  function checkCancelled(){
+    if(cancelRequested) throw new Error('cancelled');
+  }
+
+  /* ---------- generation pipeline ---------- */
+  async function runBriefStage(nAngles){
+    const seed=$('seedIdea').value.trim();
+    const avoid=$('avoidText').value.trim();
+    let text=(seed?('SEED IDEA:\n'+seed+'\n\n'):'');
+    if(refImage){
+      text+=seed
+        ? 'A reference image is attached. The seed idea is the highest authority and states how the image should be used; absent such instructions, treat the image as visual reference material for the intended look.\n\n'
+        : 'No seed text provided. A reference image is attached: treat its scene, subjects, and overall visual identity as the seed idea and springboard the brief and angles from it.\n\n';
+    }
+    if(state.wilds.length){
+      text+='Tokens of the form _name_ in the seed material are wildcard placeholders that will receive a different randomized value for every prompt. Treat them as open variables: carry them through the brief and angles unchanged where relevant, and do not resolve, replace, or enumerate their possible values.\n\n';
+    }
+    text+=(avoid?('THINGS TO AVOID:\n'+avoid+'\n\n'):'')
+      + 'Produce the creative brief and exactly '+nAngles+' concept angles.';
+    const user=refImage
+      ? [{type:'text', text}, {type:'image_url', image_url:{url:refImage}}]
+      : text;
+    const raw=await vlmComplete(briefRuleset(), user, {schema:(vlmSchemaOn()?briefSchemaFormat():null)});
+    const parsed=extractJson(raw);
+    const brief=String(parsed&&parsed.brief||'').trim();
+    const angles=(Array.isArray(parsed&&parsed.angles)?parsed.angles:[]).map(a=>String(a).trim()).filter(Boolean);
+    if(!brief||!angles.length) throw new Error('brief agent returned no brief/angles');
+    return {brief, angles};
+  }
+
+  async function runChunkStage(assignments){
+    const raw=await vlmComplete(batchRuleset(), chunkUserMessage(assignments), {schema:(vlmSchemaOn()?batchSchemaFormat():null)});
+    const parsed=extractJson(raw);
+    const arr=(Array.isArray(parsed&&parsed.prompts)?parsed.prompts:[]).map(p=>String(p).trim()).filter(Boolean);
+    if(!arr.length) throw new Error('batch agent returned no prompts');
+    return arr.slice(0, assignments.length);
+  }
+
+  // Generate `target` prompts and append them to the list.
+  async function generatePrompts(target){
+    const startCount=state.prompts.length;
+    // One angle per prompt, capped; big batches cycle through the angle list.
+    const nAngles=clamp(target,1,40);
+    if(!state.brief){
+      setStatus('Expanding the seed idea into a creative brief…');
+      state.brief=await runBriefStage(nAngles);
+      autoSave();
+    }
+    checkCancelled();
+    let made=0;
+    while(made<target){
+      const n=Math.min(chunkSize(), target-made);
+      const assignments=[];
+      for(let i=0;i<n;i++){
+        const gi=startCount+made+i; // global position drives angle + keyword rotation
+        const draws=drawWildValues();
+        assignments.push({ angle:state.brief.angles[gi % state.brief.angles.length], kws:kwsForIndex(gi, draws), wilds:draws });
+      }
+      setStatus('Writing prompts '+(startCount+made+1)+'–'+(startCount+made+n)+' of '+(startCount+target)+'…');
+      const texts=await runChunkStage(assignments);
+      texts.forEach((t,i)=>{
+        // Resolve any placeholder tokens the model echoed literally.
+        const text=expandWildTokens(t, assignments[i].wilds);
+        state.prompts.push({text, angle:assignments[i].angle, kws:assignments[i].kws, wilds:assignments[i].wilds});
+        appendItemDom(state.prompts.length-1);
+      });
+      made+=texts.length;
+      updateBadges(); autoSave();
+      setProgress(made/target*100);
+      checkCancelled();
+    }
+  }
+
+  async function runGenerate(fresh){
+    if(agentBusy) return;
+    if(!$('seedIdea').value.trim() && !refImage){ setStatus('Enter a seed idea or add a reference image first.','warn'); return; }
+    let target;
+    try{ shapeSpec(); target=batchSizeVal(); }
+    catch(e){ setStatus(e.message,'warn'); return; }
+    setAgentBusy(true); setProgress(0);
+    try{
+      if(fresh){
+        state.prompts=[]; state.brief=null;
+        state.format=currentShapeId();
+        renderList();
+      }else if(!state.prompts.length){
+        state.format=currentShapeId();
+      }
+      await generatePrompts(target);
+      const missing=missingKeywordCount();
+      setStatus('Done — '+state.prompts.length+' prompt'+(state.prompts.length>1?'s':'')+' in the batch.'
+        +(missing?(' ⚠ '+missing+' missing required keywords (flagged in the list).'):''), missing?'warn':'ok');
+    }catch(e){
+      if(String(e.message)==='cancelled'||e.name==='AbortError'){
+        setStatus('Cancelled — '+state.prompts.length+' prompts kept.','warn');
+      }else{
+        console.warn('[Prompt Forge] generation failed', e);
+        setStatus('Generation failed: '+(e.message||e)+'  · check the provider URL/key in .env','err');
+      }
+    }finally{
+      setAgentBusy(false); updateBadges(); autoSave();
+    }
+  }
+
+  async function rerollOne(idx){
+    if(agentBusy) return;
+    const item=state.prompts[idx];
+    if(!item) return;
+    if(!state.brief && !$('seedIdea').value.trim() && !refImage){
+      setStatus('Rerolling needs a creative brief — enter a seed idea or add a reference image first.','warn');
+      return;
+    }
+    setAgentBusy(true);
+    const row=$('promptList').children[idx];
+    row?.classList.add('busy');
+    try{
+      const angle=item.angle||'A fresh scene inside the creative brief.';
+      if(!state.brief){
+        state.brief=await runBriefStage(clamp(Math.max(state.prompts.length,batchSizeVal()),1,40));
+      }
+      // Keep the stored draws so the prompt's keyword expansions stay coherent
+      // (fresh draws for old prompts that never had any).
+      const wilds=(item.wilds&&Object.keys(item.wilds).length)?item.wilds:drawWildValues();
+      const user=chunkUserMessage([{angle, kws:item.kws||[], wilds}])
+        +'\n\nIt must be a fresh alternative, clearly different from this existing prompt:\n'
+        +item.text.replace(/\s+/g,' ').slice(0,400);
+      const raw=await vlmComplete(batchRuleset(), user, {schema:(vlmSchemaOn()?batchSchemaFormat():null)});
+      const parsed=extractJson(raw);
+      const arr=(Array.isArray(parsed&&parsed.prompts)?parsed.prompts:[]).map(p=>String(p).trim()).filter(Boolean);
+      if(!arr.length) throw new Error('reroll returned no prompt');
+      item.text=expandWildTokens(arr[0], wilds);
+      item.wilds=wilds;
+      renderItemDom(idx);
+      setStatus('Rerolled prompt '+(idx+1)+'.','ok');
+      autoSave(); updateBadges();
+    }catch(e){
+      if(!(String(e.message)==='cancelled'||e.name==='AbortError')){
+        console.warn('[Prompt Forge] reroll failed', e);
+        setStatus('Reroll failed: '+(e.message||e),'err');
+      }
+    }finally{
+      row?.classList.remove('busy');
+      setAgentBusy(false);
+    }
+  }
+
+  /* ---------- keyword post-check ---------- */
+  function missingKws(item){
+    return (item.kws||[]).filter(k=>!item.text.includes(k));
+  }
+  function missingKeywordCount(){
+    return state.prompts.reduce((n,p)=>n+(missingKws(p).length?1:0),0);
+  }
+
+  /* ---------- results list DOM ---------- */
+  function updateBadges(){
+    $('countBadge').textContent=String(state.prompts.length);
+    $('formatBadge').textContent=state.prompts.length?shapeLabel(state.format):'—';
+    const miss=missingKeywordCount();
+    $('kwMissBadge').hidden=!miss;
+    $('kwMissCount').textContent=String(miss);
+    const empty=document.querySelector('.emptyList');
+    if(state.prompts.length && empty) empty.remove();
+    if(!state.prompts.length && !empty) showEmpty();
+  }
+
+  function showEmpty(){
+    const d=document.createElement('div');
+    d.className='emptyList';
+    d.innerHTML='No prompts yet — describe your seed idea on the left and hit <b>Generate batch</b>.';
+    $('promptList').appendChild(d);
+  }
+
+  function buildItemDom(idx){
+    const item=state.prompts[idx];
+    const wrap=document.createElement('div');
+    wrap.className='promptItem';
+    const head=document.createElement('div');
+    head.className='promptItemHead';
+    const num=document.createElement('span');
+    num.className='promptIdx';
+    num.textContent='#'+(idx+1);
+    head.appendChild(num);
+    const miss=missingKws(item);
+    if(miss.length){
+      const w=document.createElement('span');
+      w.className='kwWarn';
+      w.title='These required keywords are not present verbatim in the prompt';
+      w.textContent='⚠ missing: '+miss.join(', ');
+      head.appendChild(w);
+    }
+    const grow=document.createElement('span'); grow.className='grow'; head.appendChild(grow);
+    const rerollBtn=document.createElement('button');
+    rerollBtn.type='button'; rerollBtn.className='small';
+    rerollBtn.textContent='🎲 Reroll';
+    rerollBtn.title='Regenerate just this prompt (same concept angle and keywords)';
+    rerollBtn.disabled=agentBusy;
+    rerollBtn.addEventListener('click',()=>rerollOne(indexOfRow(wrap)));
+    const delBtn=document.createElement('button');
+    delBtn.type='button'; delBtn.className='small danger';
+    delBtn.textContent='✕';
+    delBtn.title='Delete this prompt';
+    delBtn.disabled=agentBusy;
+    delBtn.addEventListener('click',()=>{
+      const i=indexOfRow(wrap);
+      if(i<0) return;
+      state.prompts.splice(i,1);
+      renderList(); updateBadges(); autoSave();
+    });
+    head.append(rerollBtn, delBtn);
+    const ta=document.createElement('textarea');
+    ta.value=item.text;
+    ta.spellcheck=false;
+    ta.rows=Math.min(12, Math.max(2, item.text.split('\n').length));
+    ta.addEventListener('input',()=>{
+      const i=indexOfRow(wrap);
+      if(i<0) return;
+      state.prompts[i].text=ta.value;
+      autoSaveDebounced();
+      // Refresh the missing-keyword chip for this row only.
+      renderItemDom(i, ta);
+    });
+    wrap.append(head, ta);
+    return wrap;
+  }
+
+  function indexOfRow(row){
+    return Array.prototype.indexOf.call($('promptList').children, row);
+  }
+
+  function appendItemDom(idx){
+    const empty=document.querySelector('.emptyList');
+    if(empty) empty.remove();
+    $('promptList').appendChild(buildItemDom(idx));
+  }
+
+  // Re-render one row; when keepTa is given, only the header chips are rebuilt
+  // so the textarea keeps focus while typing.
+  function renderItemDom(idx, keepTa){
+    const list=$('promptList');
+    const old=list.children[idx];
+    if(!old) return;
+    if(keepTa){
+      const fresh=buildItemDom(idx);
+      old.replaceChild(fresh.querySelector('.promptItemHead'), old.querySelector('.promptItemHead'));
+      updateBadges();
+      return;
+    }
+    list.replaceChild(buildItemDom(idx), old);
+    updateBadges();
+  }
+
+  function renderList(){
+    const list=$('promptList');
+    list.innerHTML='';
+    state.prompts.forEach((_,i)=>list.appendChild(buildItemDom(i)));
+    if(!state.prompts.length) showEmpty();
+    updateBadges();
+  }
+
+  /* ---------- copy / save / batch IO ---------- */
+  // Blank-line joins are ambiguous once prompts themselves contain blank lines
+  // (multi-paragraph / markdown shapes), so those batches switch to explicit
+  // "=== PROMPT n/N ===" separator lines. Split them back apart with
+  // /^=== PROMPT \d+\/\d+ ===$/m.
+  function delimitedText(){
+    const n=state.prompts.length;
+    return state.prompts.map((p,i)=>'=== PROMPT '+(i+1)+'/'+n+' ===\n'+p.text).join('\n\n')+'\n';
+  }
+  function joinedPrompts(){
+    if(state.prompts.some(p=>/\n\s*\n/.test(p.text))) return delimitedText();
+    return state.prompts.map(p=>p.text).join('\n\n');
+  }
+  function jsonlText(){
+    return state.prompts.map(p=>JSON.stringify(p.text)).join('\n')+'\n';
+  }
+
+  // navigator.clipboard needs a secure context (HTTPS/localhost); ComfyUI is
+  // often served over plain LAN HTTP, so fall back to execCommand there.
+  function legacyCopy(text){
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    ta.setAttribute('readonly','');
+    ta.style.position='fixed';
+    ta.style.left='-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    let ok=false;
+    try{ ok=document.execCommand('copy'); }catch(_){ ok=false; }
+    ta.remove();
+    return ok;
+  }
+  async function copyToClipboard(text){
+    if(navigator.clipboard && window.isSecureContext){
+      try{ await navigator.clipboard.writeText(text); return true; }
+      catch(_){ /* fall through to the legacy path */ }
+    }
+    return legacyCopy(text);
+  }
+
+  function downloadFile(filename, text, mime){
+    // Explicit UTF-8 in the blob type so hex codes, arrows, and any non-ASCII
+    // the model emits survive round-trips through other tools. No BOM — it
+    // breaks line-oriented parsers.
+    const blob=new Blob([text], {type:mime+';charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  }
+  function exportStamp(){
+    const d=new Date(), p=(v)=>String(v).padStart(2,'0');
+    return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes());
+  }
+  function saveTxt(){
+    if(!state.prompts.length){ setStatus('Nothing to save — the batch is empty.','warn'); return; }
+    downloadFile('prompt_forge_'+exportStamp()+'.txt', delimitedText(), 'text/plain');
+    setStatus('Saved '+state.prompts.length+' prompts as .txt.','ok');
+  }
+  function saveJsonl(){
+    if(!state.prompts.length){ setStatus('Nothing to save — the batch is empty.','warn'); return; }
+    downloadFile('prompt_forge_'+exportStamp()+'.jsonl', jsonlText(), 'application/jsonl');
+    setStatus('Saved '+state.prompts.length+' prompts as .jsonl.','ok');
+  }
+
+  function getBatch(){
+    return JSON.stringify({format:state.format, prompts:state.prompts.map(p=>p.text)});
+  }
+  function setBatch(text){
+    let data;
+    try{ data=JSON.parse(text); }catch(_){ return; }
+    const prompts=(data&&Array.isArray(data.prompts))?data.prompts.map(String):null;
+    if(!prompts||!prompts.length) return;
+    // The autosaved session is richer (angles/keywords per prompt); only take
+    // the node's batch when it actually differs from what we restored.
+    if(prompts.length===state.prompts.length && prompts.every((t,i)=>t===state.prompts[i].text)) return;
+    state.format=String(data.format||'paragraph');
+    state.prompts=prompts.map(t=>({text:t, angle:null, kws:[]}));
+    renderList();
+  }
+
+  async function copyAll(){
+    const text=joinedPrompts();
+    if(!text.trim()){ setStatus('Nothing to copy — the batch is empty.','warn'); return; }
+    if(await copyToClipboard(text)){
+      setStatus('Copied '+state.prompts.length+' prompts to the clipboard.','ok');
+    }else{
+      setStatus('Clipboard blocked by the browser — use ⬇ .txt instead.','warn');
+    }
+  }
+
+  function postParent(type){ try{ parent.postMessage({type}, '*'); }catch(_){}}
+
+  /* ---------- session autosave ---------- */
+  function getSessionSnapshot(){
+    return {
+      seed:$('seedIdea').value, avoid:$('avoidText').value,
+      keywords:$('keywords').value, kwMode:state.kwMode,
+      shape:currentShapeId(), customShape:$('customShape').value,
+      batchSize:$('batchSize').value, variation:$('variation').value,
+      format:state.format, brief:state.brief, prompts:state.prompts,
+      wilds:state.wilds,
+    };
+  }
+  function autoSave(){
+    try{ localStorage.setItem(SESSION_LS, JSON.stringify(getSessionSnapshot())); }
+    catch(e){ console.warn('[Prompt Forge] autosave failed (storage full?)', e); }
+  }
+  let autoSaveTimer=null;
+  function autoSaveDebounced(){
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer=setTimeout(autoSave, 400);
+  }
+  function restoreSession(){
+    let snap;
+    try{ snap=JSON.parse(localStorage.getItem(SESSION_LS)||''); }catch(_){ return; }
+    if(!snap||typeof snap!=='object') return;
+    $('seedIdea').value=snap.seed||'';
+    $('avoidText').value=snap.avoid||'';
+    $('keywords').value=snap.keywords||'';
+    setKwMode(snap.kwMode==='rotate'?'rotate':'all');
+    if(snap.shape && $('shapeSelect').querySelector('option[value="'+snap.shape+'"]')) $('shapeSelect').value=snap.shape;
+    $('customShape').value=snap.customShape||'';
+    if(snap.batchSize) $('batchSize').value=snap.batchSize;
+    if(snap.variation && $('variation').querySelector('option[value="'+snap.variation+'"]')) $('variation').value=snap.variation;
+    state.format=String(snap.format||'paragraph');
+    state.brief=(snap.brief&&snap.brief.brief&&Array.isArray(snap.brief.angles))?snap.brief:null;
+    state.prompts=(Array.isArray(snap.prompts)?snap.prompts:[]).map(p=>({
+      text:String(p&&p.text||''), angle:(p&&p.angle)||null,
+      kws:Array.isArray(p&&p.kws)?p.kws.map(String):[],
+      wilds:(p&&typeof p.wilds==='object'&&p.wilds)||{},
+    })).filter(p=>p.text);
+    state.wilds=(Array.isArray(snap.wilds)?snap.wilds:[]).map(w=>({
+      name:sanitizeWildName(w&&w.name),
+      lines:Array.isArray(w&&w.lines)?w.lines.map(String).filter(Boolean):[],
+    })).filter(w=>w.lines.length);
+    updateCustomShapeVis();
+  }
+
+  /* ---------- UI wiring ---------- */
+  function setKwMode(mode){
+    state.kwMode=mode;
+    document.querySelectorAll('#kwModeSeg button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.kwmode===mode);
+    });
+  }
+  function updateCustomShapeVis(){
+    $('customShapeWrap').hidden=currentShapeId()!=='custom';
+  }
+
+  function bindUI(){
+    document.querySelectorAll('#kwModeSeg button').forEach(b=>{
+      b.addEventListener('click',()=>{ setKwMode(b.dataset.kwmode); autoSave(); });
+    });
+    $('shapeSelect').addEventListener('change',()=>{ updateCustomShapeVis(); autoSave(); });
+    ['seedIdea','avoidText','keywords','customShape','batchSize','variation'].forEach(id=>{
+      $(id).addEventListener('input', autoSaveDebounced);
+    });
+
+    $('generateBtn').addEventListener('click',()=>{
+      if(state.prompts.length && !confirm('Replace the current '+state.prompts.length+' prompts with a fresh batch?\n\n(Use "Generate more" to append instead.)')) return;
+      runGenerate(true);
+    });
+    $('moreBtn').addEventListener('click',()=>runGenerate(false));
+    $('cancelGenBtn').addEventListener('click',()=>{
+      cancelRequested=true;
+      try{ currentAbort?.abort(); }catch(_){}
+      setStatus('Cancelling after the current call…','warn');
+    });
+
+    $('copyAllBtn').addEventListener('click', copyAll);
+    $('saveTxtBtn').addEventListener('click', saveTxt);
+    $('saveJsonlBtn').addEventListener('click', saveJsonl);
+    $('clearBtn').addEventListener('click',()=>{
+      if(!state.prompts.length) return;
+      if(!confirm('Delete all '+state.prompts.length+' prompts?')) return;
+      state.prompts=[]; state.brief=null;
+      renderList(); autoSave();
+      setStatus('Batch cleared.','');
+    });
+
+    $('closeBtn').addEventListener('click',()=>postParent('forgeClose'));
+    const save=()=>{ autoSave(); postParent('forgeSave'); };
+    const sendClose=()=>{ autoSave(); postParent('forgeSendClose'); };
+    $('saveBtn').addEventListener('click', save);
+    $('saveBtn2').addEventListener('click', save);
+    $('sendCloseBtn').addEventListener('click', sendClose);
+    $('sendCloseBtn2').addEventListener('click', sendClose);
+
+    // Right-panel tabs.
+    document.querySelectorAll('.rightTab').forEach(t=>{
+      t.addEventListener('click',()=>{
+        document.querySelectorAll('.rightTab').forEach(x=>x.classList.toggle('active', x===t));
+        document.querySelectorAll('.rightPane').forEach(p=>p.classList.toggle('active', p.dataset.rpaneview===t.dataset.rpane));
+      });
+    });
+    // Agent config tabs.
+    document.querySelectorAll('.agentTab').forEach(t=>{
+      t.addEventListener('click',()=>{
+        document.querySelectorAll('.agentTab').forEach(x=>x.classList.toggle('active', x===t));
+        document.querySelectorAll('.agentPane').forEach(p=>p.classList.toggle('active', p.dataset.apane===t.dataset.atab));
+      });
+    });
+  }
+
+  function bindAgentConfig(){
+    $('providerRefresh').addEventListener('click', loadProviders);
+    $('providerSelect').addEventListener('change',()=>{
+      localStorage.setItem(PROVIDER_LS, selectedProviderId());
+      updateControls();
+    });
+
+    const schema=localStorage.getItem(SCHEMA_LS);
+    if(schema!=null) $('vlmSchema').checked=schema==='1';
+    $('vlmSchema').addEventListener('change',()=>localStorage.setItem(SCHEMA_LS, $('vlmSchema').checked?'1':'0'));
+
+    const temp=localStorage.getItem(TEMP_LS); if(temp!=null) $('vlmTemp').value=temp;
+    $('vlmTemp').addEventListener('change',()=>localStorage.setItem(TEMP_LS, $('vlmTemp').value));
+    const maxtok=localStorage.getItem(MAXTOK_LS); if(maxtok!=null) $('vlmMaxTokens').value=maxtok;
+    $('vlmMaxTokens').addEventListener('change',()=>localStorage.setItem(MAXTOK_LS, $('vlmMaxTokens').value));
+    const chunk=localStorage.getItem(CHUNK_LS); if(chunk!=null) $('chunkSize').value=chunk;
+    $('chunkSize').addEventListener('change',()=>localStorage.setItem(CHUNK_LS, $('chunkSize').value));
+
+    // Rulesets: default text unless a local edit is stored; empty/default edits
+    // are dropped so upstream default changes flow through.
+    const defaults={brief:DEFAULT_RULESET_BRIEF, batch:DEFAULT_RULESET_BATCH};
+    const areas={brief:$('rulesetBrief'), batch:$('rulesetBatch')};
+    Object.keys(areas).forEach(key=>{
+      const saved=localStorage.getItem(RULESET_LS[key]);
+      areas[key].value=(saved!=null&&saved.trim())?saved:defaults[key];
+      areas[key].addEventListener('change',()=>{
+        const v=areas[key].value;
+        if(!v.trim()||v===defaults[key]) localStorage.removeItem(RULESET_LS[key]);
+        else localStorage.setItem(RULESET_LS[key], v);
+      });
+    });
+    document.querySelectorAll('[data-ruleset-reset]').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const key=b.dataset.rulesetReset;
+        localStorage.removeItem(RULESET_LS[key]);
+        areas[key].value=defaults[key];
+      });
+    });
+  }
+
+  /* ---------- parent bridge ---------- */
+  window.promptForgeAPI={
+    getBatch,
+    setBatch,
+  };
+
+  /* ---------- init ---------- */
+  restoreSession();
+  setRefImage(localStorage.getItem(REFIMG_LS)||null);
+  bindUI();
+  bindRefImage();
+  bindWildcards();
+  renderWildList();
+  bindAgentConfig();
+  renderList();
+  loadProviders();
+})();
+</script>
+</body>
+</html>
